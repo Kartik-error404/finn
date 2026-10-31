@@ -2,3 +2,19 @@
 data/settings.json
 .env
 __pycache__/
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# macOS files
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+myenv/
+.venv/
