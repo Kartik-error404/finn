@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090b0e">
+<title>FINN — Mobile-First Financial Investment Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- Top Presenter / Utility Bar -->
+<div class="workspace-bar">
+  <div class="wb-left">
+    <span class="wb-badge">ENAM Build Challenge · FINN v2</span>
+    <span class="wb-hide-sm" style="font-size:12px;color:var(--mute)">Mobile-First Financial Investment Agent (Push + Pull)</span>
+  </div>
+  <div class="wb-actions">
+    <button type="button" class="wb-btn active" id="btn-frame-mobile" onclick="setViewportMode('mobile')">📱 Mobile (480px)</button>
+    <button type="button" class="wb-btn" id="btn-frame-wide" onclick="setViewportMode('wide')">🖥️ Expanded (960px)</button>
+    <button type="button" class="wb-btn" id="btn-voice-brief" onclick="toggleVoiceBrief()">🔊 60s Audio Brief</button>
+    <button type="button" class="wb-btn" id="btn-open-glossary" onclick="openModal('glossary-modal')">📖 Glossary & Reference</button>
+    <button type="button" class="wb-btn" id="btn-open-arch" onclick="openModal('arch-modal')">⚡ Cost & Architecture</button>
+  </div>
+</div>
+
+<div class="app-shell" id="app-shell">
+  <!-- Sticky Mobile App Header -->
+  <header class="top-header">
+    <div class="brand-wrap">
+      <div class="brand-logo">F</div>
+      <div>
+        <div class="brand">FINN<span class="dot">.</span></div>
+        <span class="brand-tag">Investor Intelligence Layer</span>
+      </div>
+    </div>
+    <div class="status-pills">
+      <span class="pill live" id="status-mode-pill" title="Data source mode">● Primary Data</span>
+      <button type="button" class="icon-btn" id="hdr-audio-btn" onclick="toggleVoiceBrief()" title="Listen to 60s Morning Brief">🔊</button>
+      <button type="button" class="icon-btn" id="hdr-glossary-btn" onclick="openModal('glossary-modal')" title="Financial Glossary & Filing Taxonomy">?</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= TAB 1: BRIEF (PUSH — WINDOWED DIGEST) ================= -->
+    <section id="view-brief" class="view active">
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <div class="hero-k" id="brief-headline">Loading your brief…</div>
+            <div class="hero-sub" id="brief-sub"></div>
+          </div>
+        </div>
+        <div class="triage-bar">
+          <div class="triage-prog-wrap">
+            <div class="triage-prog-lbl">
+              <span id="triage-status-lbl">Inbox Triage</span>
+              <span class="num" id="triage-pct-lbl">0%</span>
+            </div>
+            <div class="triage-track"><div class="triage-fill" id="triage-fill-bar" style="width:0%"></div></div>
+          </div>
+          <div class="triage-actions">
+            <button type="button" class="mini-btn" id="btn-filter-unseen" onclick="toggleUnseenOnly()">Unseen only</button>
+            <button type="button" class="mini-btn" id="btn-mark-all-seen" onclick="markAllActSeen()">✓ Mark all seen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time Window Selector -->
+      <div class="chips-row" id="window-chips">
+        <button type="button" class="chip" data-h="6" onclick="selectWindowHours(6)">Last 6h</button>
+        <button type="button" class="chip on" data-h="24" onclick="selectWindowHours(24)">Last 24h</button>
+        <button type="button" class="chip" data-h="72" onclick="selectWindowHours(72)">3 Days</button>
+        <button type="button" class="chip" data-h="168" onclick="selectWindowHours(168)">7 Days</button>
+        <button type="button" class="chip" data-h="720" onclick="selectWindowHours(720)">30 Days</button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="chips-row" id="brief-cat-chips">
+        <button type="button" class="chip cat-chip on" data-cat="all" onclick="selectBriefCategory('all')">All Signals</button>
+        <button type="button" class="chip cat-chip" data-cat="results" onclick="selectBriefCategory('results')">📊 Quarterly Results</button>
+        <button type="button" class="chip cat-chip" data-cat="management_change" onclick="selectBriefCategory('management_change')">👤 Mgmt Change</button>
+        <button type="button" class="chip cat-chip" data-cat="M&A" onclick="selectBriefCategory('M&A')">🤝 M&A / JV</button>
+        <button type="button" class="chip cat-chip" data-cat="capex" onclick="selectBriefCategory('capex')">🏗️ Capex & Orders</button>
+        <button type="button" class="chip cat-chip" data-cat="risk" onclick="selectBriefCategory('risk')">⚠️ Litigation / Pledge</button>
+        <button type="button" class="chip cat-chip" data-cat="bookmarked" onclick="selectBriefCategory('bookmarked')">★ Saved</button>
+      </div>
+
+      <div id="brief-list"></div>
+    </section>
+
+    <!-- ================= TAB 2: RADAR (PUSH — TRIGGERED ALERTS) ================= -->
+    <section id="view-radar" class="view">
+      <div class="hero">
+        <div class="hero-k" id="radar-headline">Scanning EOD anomalies…</div>
+        <div class="hero-sub">Unusual volume/price moves joined with same-day exchange disclosures — governed by <em>your</em> thresholds.</div>
+      </div>
+
+      <!-- Live Interactive Threshold Sliders -->
+      <div class="thresh-panel">
+        <div class="row">
+          <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--mute)">⚡ Live Alert Thresholds</span>
+          <span class="sp"></span>
+          <button type="button" class="mini-btn" id="btn-toggle-cats" onclick="toggleRadarCats()">Filing Types ▾</button>
+          <button type="button" class="mini-btn" id="btn-reset-thresh" onclick="resetThresholds()">Reset</button>
+        </div>
+        <div class="thresh-grid">
+          <div class="slider-box">
+            <div class="slider-hdr"><span>Volume Spike (vs 20d avg)</span><b id="v-vol">&gt; 2.0×</b></div>
+            <input type="range" id="s-vol" min="1.2" max="4.5" step="0.1" value="2.0" oninput="onThresholdInput()">
+          </div>
+          <div class="slider-box">
+            <div class="slider-hdr"><span>Daily Price Move</span><b id="v-px">±4.0%</b></div>
+            <input type="range" id="s-px" min="1.0" max="8.0" step="0.5" value="4.0" oninput="onThresholdInput()">
+          </div>
+        </div>
+        <div id="radar-cats-drawer" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+          <div style="font-size:11.5px;color:var(--mute);margin-bottom:6px">Material announcement categories that trigger instant alerts:</div>
+          <div class="chips-row wrap" id="s-cats"></div>
+        </div>
+      </div>
+
+      <div id="alert-list"></div>
+
+      <div class="row" style="margin:16px 4px 8px">
+        <h3 style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--mute);font-weight:700">Portfolio EOD Tape (<span id="port-count-lbl">18</span> Holdings)</h3>
+        <span class="sp"></span>
+        <div class="triage-actions">
+          <button type="button" class="mini-btn on" id="sort-chg" onclick="setWatchlistSort('change')">By |Move %|</button>
+          <button type="button" class="mini-btn" id="sort-vol" onclick="setWatchlistSort('vol')">By Vol ×</button>
+        </div>
+      </div>
+      <div class="watchlist-grid" id="watchlist"></div>
+    </section>
+
+    <!-- ================= TAB 3: RESEARCH (PULL — PRIMARY SOURCE ENGINE) ================= -->
+    <section id="view-research" class="view">
+      <form id="r-form" class="search-bar" onsubmit="handleResearchSubmit(event)">
+        <input id="r-input" placeholder="Any NSE ticker — e.g. PIDILITIND, HAL, WIPRO, BEL" autocomplete="off" autocapitalize="characters">
+        <button type="submit" id="r-submit-btn">Analyse</button>
+      </form>
+
+      <div style="font-size:11px;color:var(--mute);margin:0 2px 4px;display:flex;justify-content:space-between">
+        <span>Ad-hoc & Portfolio Quick Picks (works on any NSE symbol):</span>
+        <span style="color:var(--up)">100% Primary Data</span>
+      </div>
+      <div class="chips-row" id="r-suggest"></div>
+
+      <!-- Research Sub-navigation Jump Bar -->
+      <div class="chips-row" id="r-jump-nav" style="padding-bottom:8px">
+        <button type="button" class="chip cat-chip on" onclick="scrollToResearchSec('sec-pvd')">1. Narrative vs Numbers</button>
+        <button type="button" class="chip cat-chip" onclick="scrollToResearchSec('sec-qsnap')">2. Quarterly Snapshot</button>
+        <button type="button" class="chip cat-chip" onclick="scrollToResearchSec('sec-business')">3. Business & Mix</button>
+        <button type="button" class="chip cat-chip" onclick="scrollToResearchSec('sec-guidance')">4. Forward Guidance</button>
+        <button type="button" class="chip cat-chip" onclick="scrollToResearchSec('sec-bullbear')">5. Bull vs Bear</button>
+        <button type="button" class="chip cat-chip" onclick="scrollToResearchSec('sec-traj')">6. Trajectory</button>
+        <button type="button" class="chip cat-chip" onclick="scrollToResearchSec('sec-cash')">7. Cash Quality</button>
+        <button type="button" class="chip cat-chip" onclick="scrollToResearchSec('sec-bs')">8. Balance Sheet</button>
+      </div>
+
+      <div id="r-out"></div>
+    </section>
+
+    <!-- ================= TAB 4: COPILOT & PORTFOLIO MANAGER ================= -->
+    <section id="view-copilot" class="view">
+      <div class="hero">
+        <div class="hero-k">Grounded Analyst Copilot & Portfolio</div>
+        <div class="hero-sub">Ask cross-portfolio or company-specific questions strictly grounded in audited filings & concall transcripts, or customize your 15–20 stock portfolio.</div>
+      </div>
+
+      <!-- Grounded Copilot Card -->
+      <div class="card act">
+        <h4>Grounded Primary-Data Copilot <span id="copilot-target-lbl">Active: PIDILITIND</span></h4>
+        <div class="chips-row" id="copilot-prompt-chips">
+          <button type="button" class="chip" onclick="runQuickAsk('Did management beat or miss their last 4 quarter guidance promises?')">Promise vs Delivered?</button>
+          <button type="button" class="chip" onclick="runQuickAsk('Do accounting profits turn into real operating cash flow and FCF?')">Cash conversion quality?</button>
+          <button type="button" class="chip" onclick="runQuickAsk('How is the balance sheet, debt/equity, and working capital cycle trending?')">Working capital & debt?</button>
+          <button type="button" class="chip" onclick="runQuickAsk('Summarize the 5-year revenue and margin trajectory.')">5Y margin trajectory?</button>
+          <button type="button" class="chip" onclick="runQuickAsk('Give me the tight bull vs bear case from the numbers.')">Bull vs Bear thesis?</button>
+        </div>
+        <form class="ask-form" id="global-ask-form" onsubmit="handleGlobalAsk(event)">
+          <input id="global-ask-input" placeholder="Ask anything grounded in filings & concalls…">
+          <button type="submit">Ask FINN</button>
+        </form>
+        <div class="answer-box show" id="global-ask-answer">Select a prompt chip above or ask a question about any NSE ticker to run a deterministic primary-source audit.</div>
+      </div>
+
+      <!-- Cross-Portfolio Credibility & Cash Conversion Leaderboard -->
+      <div class="card">
+        <h4>Portfolio Credibility & Cash Matrix <span>Tap any stock to inspect</span></h4>
+        <div class="rt-wrap" style="margin-top:4px">
+          <table class="rt" id="matrix-table"></table>
+        </div>
+      </div>
+
+      <!-- Interactive Portfolio Manager -->
+      <div class="card">
+        <h4>Manage Your Portfolio <span id="mgr-count-badge">18 stocks</span></h4>
+        <div style="font-size:12.5px;color:var(--mute);margin-bottom:8px">Add any NSE ticker (e.g. HAL, PIDILITIND, ZOMATO, BEL, WIPRO) to include it in your Push Digest and Radar watches.</div>
+        <form class="ask-form" id="add-port-form" onsubmit="handleAddPortfolio(event)" style="margin-bottom:10px">
+          <input id="add-port-sym" placeholder="NSE Symbol (e.g. HAL, ZOMATO, BEL)" style="text-transform:uppercase">
+          <input id="add-port-sec" placeholder="Sector (optional)" style="max-width:135px">
+          <button type="submit">+ Add</button>
+        </form>
+        <div class="chips-row wrap" id="portfolio-pills-list"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Bottom Mobile Navigation Bar -->
+<nav class="bottom-tabs" id="bottom-tabs">
+  <button type="button" data-v="brief" class="on" onclick="go('brief')">
+    <span class="ic">◉</span><span>Brief</span><i class="badge" id="b-brief"></i>
+  </button>
+  <button type="button" data-v="radar" onclick="go('radar')">
+    <span class="ic">◎</span><span>Radar</span><i class="badge" id="b-radar"></i>
+  </button>
+  <button type="button" data-v="research" onclick="go('research')">
+    <span class="ic">⌕</span><span>Research</span>
+  </button>
+  <button type="button" data-v="copilot" onclick="go('copilot')">
+    <span class="ic">✦</span><span>Copilot</span>
+  </button>
+</nav>
+
+<!-- Filing Detail / Excerpt Modal -->
+<div class="modal-backdrop" id="filing-modal" onclick="if(event.target===this)closeModal('filing-modal')">
+  <div class="modal-sheet">
+    <div class="modal-hdr">
+      <div class="modal-title" id="fm-title">Exchange Filing</div>
+      <button type="button" class="close-btn" onclick="closeModal('filing-modal')">✕</button>
+    </div>
+    <div id="fm-body"></div>
+  </div>
+</div>
+
+<!-- Financial Glossary & Category Reference Modal -->
+<div class="modal-backdrop" id="glossary-modal" onclick="if(event.target===this)closeModal('glossary-modal')">
+  <div class="modal-sheet">
+    <div class="modal-hdr">
+      <div class="modal-title">📖 Financial Glossary & Filing Categories</div>
+      <button type="button" class="close-btn" onclick="closeModal('glossary-modal')">✕</button>
+    </div>
+    <div style="font-size:12.5px;color:var(--ink-soft);line-height:1.5">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:6px;text-transform:uppercase;font-size:11px">Headline P&L, Balance Sheet & Cash Terms</div>
+      <div class="rt-wrap" style="margin-bottom:12px">
+        <table class="rt">
+          <tr><td><b>Revenue</b></td><td style="font-family:var(--font);text-align:left">Top-line total sales from goods/services before any expenses.</td></tr>
+          <tr><td><b>EBITDA & OPM %</b></td><td style="font-family:var(--font);text-align:left">Operating profit before interest, tax, depreciation & amortisation. Core operating margin proxy.</td></tr>
+          <tr><td><b>PBT & PAT</b></td><td style="font-family:var(--font);text-align:left">Profit Before Tax and Profit After Tax (bottom-line net profit attributable to shareholders).</td></tr>
+          <tr><td><b>QoQ / YoY</b></td><td style="font-family:var(--font);text-align:left">Quarter-on-Quarter (vs immediate prior quarter) and Year-on-Year (vs same quarter a year ago, stripping seasonality).</td></tr>
+          <tr><td><b>Cash Conversion (CFO/PAT)</b></td><td style="font-family:var(--font);text-align:left">Operating cash flow divided by net profit. Persistent PAT without matching CFO (&lt;75%) is an accounting quality red flag.</td></tr>
+          <tr><td><b>Working Capital Cycle (CCC)</b></td><td style="font-family:var(--font);text-align:left">Debtor Days + Inventory Days − Payable Days. A lengthening cycle quietly drains cash.</td></tr>
+          <tr><td><b>ROCE / ROE / D/E</b></td><td style="font-family:var(--font);text-align:left">Return on Capital Employed, Return on Equity, and Debt-to-Equity leverage ratio.</td></tr>
+        </table>
+      </div>
+      <div style="font-weight:700;color:var(--accent);margin-bottom:6px;text-transform:uppercase;font-size:11px">17 Corporate Announcement Categories & Base Priority</div>
+      <div class="rt-wrap">
+        <table class="rt">
+          <tr><th>Category</th><th>Base Score</th><th style="text-align:left">What Goes In It</th></tr>
+          <tr><td>results</td><td>90</td><td style="font-family:var(--font);text-align:left">Quarterly/annual financial results & outcome of board meetings.</td></tr>
+          <tr><td>M&A</td><td>85</td><td style="font-family:var(--font);text-align:left">Acquisitions, mergers, demergers, joint ventures, subsidiary stakes.</td></tr>
+          <tr><td>management_change</td><td>80</td><td style="font-family:var(--font);text-align:left">CEO, CFO, MD, or Director appointments, resignations, or retirements.</td></tr>
+          <tr><td>fund_raise</td><td>75</td><td style="font-family:var(--font);text-align:left">QIPs, rights issues, preferential allotments, buybacks, NCDs/bonds.</td></tr>
+          <tr><td>litigation</td><td>72</td><td style="font-family:var(--font);text-align:left">USFDA warning letters, regulatory orders, tax demands, NCLT/court notices.</td></tr>
+          <tr><td>pledging</td><td>70</td><td style="font-family:var(--font);text-align:left">Promoter pledging, encumbering, or releasing pledged shares.</td></tr>
+          <tr><td>capex</td><td>65</td><td style="font-family:var(--font);text-align:left">New plant approvals, greenfield/brownfield capacity expansion.</td></tr>
+          <tr><td>unclassified</td><td>5</td><td style="font-family:var(--font);text-align:left">Routine ESOP allotments, Reg 74(5) certificates, BRSR, lost share notices (collapsed).</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Architecture & Cost Discipline Modal -->
+<div class="modal-backdrop" id="arch-modal" onclick="if(event.target===this)closeModal('arch-modal')">
+  <div class="modal-sheet">
+    <div class="modal-hdr">
+      <div class="modal-title">⚡ FINN Architecture & Cost Discipline</div>
+      <button type="button" class="close-btn" onclick="closeModal('arch-modal')">✕</button>
+    </div>
+    <div style="font-size:12.5px;color:var(--ink-soft);line-height:1.55;display:grid;gap:10px">
+      <div class="slider-box">
+        <div style="font-weight:700;color:var(--up);margin-bottom:4px">1. Zero-Hallucination Deterministic Math</div>
+        All financial metrics — QoQ/YoY deltas, 3Y/5Y CAGRs, CFO/PAT cash conversion, Debt/Equity, Working Capital Cycle days, and Promise-vs-Delivered verdicts — are computed in Python/JS directly from reported tables, never by an LLM.
+      </div>
+      <div class="slider-box">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:4px">2. Three-Tier Model Routing & 10× Transcript Chunking</div>
+        • <b>Tier 0 (Regex Rules — ~90% of filings, ₹0 cost):</b> Classifies corporate filings and scores priority.<br>
+        • <b>Tier 1 (Cheap Model — Llama-3.1-8B / Gemini Flash-Lite):</b> Handles ambiguous filing classification, 18-word summaries, and guidance extraction on regex-filtered forward-looking concall paragraphs (cutting input tokens ~10×).<br>
+        • <b>Tier 2 (Strong Model — Llama-3.3-70B):</b> Invoked only for Bull/Bear synthesis and free-form Q&A, receiving strictly the pre-computed JSON facts and verbatim quotes.
+      </div>
+      <div class="slider-box">
+        <div style="font-weight:700;color:var(--amber);margin-bottom:4px">3. Strict Primary-Source Discipline</div>
+        Pull research uses strictly NSE/BSE filings, Screener consolidated tables, Annual Reports, and Concall Transcripts. Zero broker notes, zero news commentary, and zero outside model memory.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast-msg">Saved</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

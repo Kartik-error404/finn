@@ -1,0 +1,3 @@
+# FINN core runs on the Python 3.9+ standard library alone.
+# Optional — enables reading concall transcript PDFs for promise-vs-delivered on live data:
+pypdf>=4.0
